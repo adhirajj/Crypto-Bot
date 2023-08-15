@@ -1,0 +1,103 @@
+CryptoBot
+solve Crypto Problems over TCP/IP
+View on GitHub
+COMPSCI 230 Computer Systems Principles Crypto Bot
+
+Overview
+This project will give you an opportunity to explore network programming. In particular, it will have you write a TCP/IP client that will communicate with a remote process running in the EdLab environment.
+
+Source Files and Compilation
+You are not provided any starter code with this project. Because we are using an autograder to score your work, you must, however, provide all code that you write in a single C source file called client.c. In fact, this is the only file you need to submit to Gradescope! The autograder will use gcc to compile your submitted C file, so make sure it compiles in your environment before submitting (e.g., Edlab).
+
+Background - Cryptography
+Cryptography is important in network communication. It is the practice and study of techniques for secure communication in the presence of adversaries. The algorithm of transforming a message such that it is hidden to an adversary is called a cipher. Sending a secure message thus has two steps
+
+Encryption - The raw message is converted to a form that makes it difficult for the adversary to retrieve the original.
+Decryption - The decrypted message is converted back to the original message so that authorized parties can retrieve the original.
+Many types of ciphers exist currently. In this project you will be implementing the decryption algorithm for a simple cryptography technique called a Substitution Cipher. Here, you specify that each letter in the alphabet maps to another letter in the alphabet. To encode a message, you follow that mapping: if u maps to a, m maps to b, a maps to x and s maps to j, umass becomes abxjj when encoded.
+
+Details and Objective
+You will implement a network client that will communicate to a remote server in the C programming language. The server implements a simple protocol that requires your client to send your netid@umass.edu email. After you do this, the server will respond to your client with a series of substitution cipher decryption problems.
+
+Your client will be expected to conduct the following procedure:
+Step 1: Open a TCP stream socket
+Step 2: Connect to the remote server on the specified port number
+Step 3: Send your SPIRE ID to the server in the following format: NETID@umass.edu
+Step 4: Receive the plaintext message to be encrypted along with the substitution cipher
+Step 5: Send the DECRYPTED message to the server (Server will drop connection if it is wrong)
+Step 6: Continue steps 4 and 5 for a random amount of times (No less than 300, but no more than 2000)
+Step 7: Once step 6 is completed, you will receive a 64-byte string (flag) that is unique to your NetID. Once you capture the flag you know you have implemented your client correctly. Note that you don’t have to submit the flag after receiving it.
+Socket Requirements
+Your client is expected to be written in C, not a high-level language such as python (no matter how tempting that might be). In order to write a networking program in C, you must use various system calls provided by the socket API. In particular, the system calls you might find useful are:
+
+socket(int domain, int type, int protocol);
+ssize_t send(int socket, const void * buffer, size_t length, int flags);
+ssize_t recv(int socket, void * buffer, size_t length, int flags);
+ssize_t connect(int socket, const struct sockaddr *address, socklen_t address_len);
+int close(int fildes);
+If you are unfamiliar with any of these, you should read up on it, review the course material and example code, look at the man pages. Reviewing the man pages will be very helpful during the completion of this assignment. Please do not neglect this valuable resource. Note: These system calls are functions, and just like any function they can possibly return errors. Be sure to check the return values of these functions to make your client more robust.
+
+To make it a little easier on you we provide you with the minimum list of header files that you need to include in your client in order to produce a working client:
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<unistd.h>
+Notice that connect takes as an argument: struct sockaddr *address. This is one of the challenges of the assignment. You will have to populate the struct with the IP address and port number as well as other information. An extremely helpful link for this is found in our code examples related with this material. Please read that entire code closely! It is very short, but dense. Hint: The network requires big-endian format, so you will have to convert between the two. Helpful functions for this are htons and inet_pton. They do have man pages, so take a look.
+
+Protocol Requirements
+To capture the flag from the server you must combine your understanding of the socket API functions and an application-layer protocol known as substitution speak which is as follows:
+
+When you first connect to the server you must identify yourself. In particular, you must send the following string:
+
+cs230 HELLO <NETID>@umass.edu\n
+This string must be exactly as we describe above - network protocols are very specific. You must replace <NETID> with your UMass NetID. By sending the identification string it will initiate the encryption server to start sending you encryption problems. You will immediately receive a “status” message with the following format:
+
+cs230 STATUS <SUBSTITUTION CIPHER> <MESSAGE>\n
+This status message includes a simple encryption problem. An example of an actual message is:
+
+cs230 STATUS abczyxdefghijklmnopqrstuvw zzyyxx
+You will need to implement functionality in your client that will decrypt the plaintext message MESSAGE by using a substitution alphabet to decrypt the original message. In this particular substitution cipher, there are 26 characters, and each character represents the substitute character at the corresponding position. You can think of the first string demarcated by spaces as the ciphertext alphabet and the second string as the encoded message, as described in [https://en.wikipedia.org/wiki/Substitution_cipher] In our case, assume that only lower case letters of the alphabet are used in the cipher and message. After you do that you need to send a response back to the server that is formatted like this:
+
+cs230 <DECRYPTED_MESSAGE>\n
+You must replace <DECRYPTED_MESSAGE> with the decrypted MESSAGE performed using your decryption algorithm. The example below shows what we would return wwvvuu because w maps to z, v maps to y and u maps to x in the example above.
+
+cs230 wwvvuu
+With your response back to the server, the server will then repeatedly send you hundreds of messages that your client must decrypt. Your client will need to decrypt each of the messages until you receive the response with the flag:
+
+cs230 <FLAG> BYE\n
+Notice that “bye” is in uppercase. The <FLAG> is a long hash value. Here is an example of the final message you will receive from the server before it disconnects from your client:
+
+cs230 7c5ee45183d657f5148fd4bbabb6615128ec32699164980be7b8b451fd9ac0c3 BYE\n
+If you are able to “capture the flag” you have completed this assignment successfully. You still need to submit your client.c file to Gradescope to receive credit.
+
+Client Program Requirements
+Your client program must accept the following command line arguments in this order:
+
+Identification
+Port
+Host IP address
+The first argument (Identification) must be a UMass email address of the form “NetID@umass.edu”. The port and host IP address are as they are defined by the socket API.
+
+We will be running a test server at address 128.119.243.147 on port 27993. You are welcome to test your client by running it like so:
+
+$ ./client netid@umass.edu 27993 128.119.243.147
+And see if you can capture your flag! Note: it took 22 seconds for our solution client to complete over a 5 Mbps connection. If it seems to take a while, it may not be wrong. If it never ends you should then add debugging output to see where it is getting blocked.
+
+Hints and Suggestions
+Here is a list of hints and suggestions that will help you in completing this assignment:
+
+Print the messages that are being sent and returned from the client and server respectively to see what you are sending to the server and what the server is sending back to you.
+Make sure the messages you send to the server are exactly as stated above. Do not add any extra spaces or additional newlines (just the one that is at the end of the message) - any extra bytes will cause a failure in communication.
+Figure out how to extract the message, decrypt them, and send back the correct result.
+Figure out how you can identify when your client is done decrypting.
+Make sure your compiled client accepts the command line arguments exactly as we described above. If it does not, the autograder on Gradescope will give you a 0.
+Print the final message so you can see the flag and verify that you have implemented the client properly. Do not forget to submit to Gradescope!
+Submitting Your Solution
+This assignment is a bit different than the past assignments. You will need to submit only the client.c file mentioned above to Gradescope. The autograder will try to compile your C code and it will then run a local server (the same as the public server) to see if your client passes the tests. The tests are simple: (1) connect to the server, (2) decrypt the messages, and (3) capture the flag. If you are able to do this successfully you will successfully complete this assignment. The total number of points for this project is 1000 (it doesn’t mean that it has more weight than other projects).
+
+230-project-cryptobot is maintained by umass-cs-230.
+This page was generated by GitHub Pages.
