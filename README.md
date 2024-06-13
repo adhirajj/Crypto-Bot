@@ -1,0 +1,4 @@
+-	Crypto Bot-
+-	1. Developed a sophisticated cryptography project implementing the Substitution Cipher decryption algorithm, demonstrating expertise in encryption techniques.
+-	2. Engineered a robust network client using C programming language to establish secure communication with a remote server, showcasing proficiency in network programming and client-server architecture.
+- 3. Implemented advanced encryption and decryption functionalities, replacing plain text characters with a fixed set of characters based on a key, ensuring data confidentiality and integrity.
